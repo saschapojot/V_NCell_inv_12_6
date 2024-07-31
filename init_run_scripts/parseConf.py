@@ -53,6 +53,7 @@ def parseConfContents(file):
     default_flush_num=""
     potFuncName=""
     coefsStr=""
+    unitCellNumStr=""
     float_pattern = r'[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?'
     boolean_pattern = r'(true|false)'
 
@@ -69,6 +70,14 @@ def parseConfContents(file):
                 match_TValPattern=re.match(r"T\s*=\s*([-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?)$",oneLine)
                 if match_TValPattern:
                     TStr=match_TValPattern.group(1)
+                else:
+                    print(fmtErrStr+oneLine)
+                    exit(fmtCode)
+            #match unitCellNum
+            if key=="unitCellNum":
+                match_unitCellNum=re.match(r"unitCellNum\s*=\s*(\d+)$",oneLine)
+                if match_unitCellNum:
+                    unitCellNumStr=match_unitCellNum.group(1)
                 else:
                     print(fmtErrStr+oneLine)
                     exit(fmtCode)
@@ -148,6 +157,8 @@ def parseConfContents(file):
     if TStr=="":
         print("T not found in "+str(file))
         exit(valueMissingCode)
+    if unitCellNumStr=="":
+        print("unit cell number not found in "+str(file))
     if eraseData=="":
         print("erase_data_if_exist not found in "+str(file))
         exit(valueMissingCode)
@@ -186,7 +197,8 @@ def parseConfContents(file):
             "loop_to_write":loop_to_write,
             "default_flush_num":default_flush_num,
             "coefs":coefsStr,
-            "confFileName":file
+            "confFileName":file,
+            "unitCellNum":unitCellNumStr
 
         }
         return dictTmp
@@ -201,7 +213,8 @@ def parseConfContents(file):
             "loop_to_write":loop_to_write,
             "default_flush_num":default_flush_num,
             "coefs":coefsStr,
-            "confFileName":file
+            "confFileName":file,
+            "unitCellNum":unitCellNumStr
 
 
         }
