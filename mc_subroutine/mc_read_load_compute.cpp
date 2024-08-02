@@ -18,6 +18,11 @@ void mc_computation::execute_mc(const double& L,const std::shared_ptr<double[]>&
     std::memcpy(d0VecCurr.get(),d0Vec.get(),N*sizeof (double ));
     std::memcpy(d1VecCurr.get(),d1Vec.get(),(N-1)*sizeof (double ));
 
+//    std::cout<<"d0VecCurr: ";
+//    print_shared_ptr(d0VecCurr,N);
+//    std::cout<<"d1VecCurr: ";
+//    print_shared_ptr(d1VecCurr,N-1);
+
     //initialize next values
     double LNext;
     std::shared_ptr<double[]> d0VecNext=std::shared_ptr<double[]>(new double[N], std::default_delete<double[]>());
@@ -55,11 +60,11 @@ void mc_computation::execute_mc(const double& L,const std::shared_ptr<double[]>&
             }//end of accept-reject
             U_dist_ptr[varNum*j+0]=UCurr;
             U_dist_ptr[varNum*j+1]=LCurr;
-            for(int n=2;n<=2+N;n++){
+            for(int n=2;n<=1+N;n++){
                 U_dist_ptr[varNum*j+n]=d0VecCurr[n-2];
             }
-            for(int n=N+3;n<=2*N+1;n++){
-                U_dist_ptr[varNum*j+n]=d1VecCurr[n-N-3];
+            for(int n=N+2;n<=2*N;n++){
+                U_dist_ptr[varNum*j+n]=d1VecCurr[n-N-2];
             }
 
         }//end for loop

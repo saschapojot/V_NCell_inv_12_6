@@ -4,7 +4,7 @@ import pandas as pd
 
 
 #This script creates directories and conf files for mc
-TVals=[0.5,1]
+TVals=[0.5,1,2]
 rowNum=0
 inParamFileName="./V_inv_12_6Params.csv"
 
@@ -18,7 +18,7 @@ a2=float(oneRow.loc["a2"])
 b2=float(oneRow.loc["b2"])
 
 
-dataRoot="./dataAll/row"+str(rowNum)+"/"
+dataRoot="./dataAllUnitCell"+str(unitCellNum)+"/row"+str(rowNum)+"/"
 
 def format_using_decimal(value):
     # Convert the float to a Decimal

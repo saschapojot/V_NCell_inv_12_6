@@ -57,7 +57,7 @@ public:
                 std::cout << "T=" << T << std::endl;
                 this->beta = 1 / T;
                 double stepForT1 = 0.1;
-                double h_threshhold=0.02;
+                double h_threshhold=0.01;
                 this->h=h_threshhold;
 //                this->h = stepForT1 * T > h_threshhold ? h_threshhold : stepForT1 * T;//stepSize;
                 std::cout << "h=" << h << std::endl;
@@ -170,9 +170,9 @@ public:
 
         std::cout<<"LInit="<<LInit<<std::endl;
         std::cout<<"d0VecInit: \n";
-        printSharedPtrDoubleArray(d0VecInit,N);
+        print_shared_ptr(d0VecInit,N);
         std::cout<<"d1VecInit: \n";
-        printSharedPtrDoubleArray(d1VecInit,N-1);
+        print_shared_ptr(d1VecInit,N-1);
         this->potFuncPtr = createPotentialFunction(potFuncName, coefsToPotFunc);
         potFuncPtr->init();
         this->varNum = 2*N+1;//U,L,d0Vec,d1Vec
@@ -201,20 +201,7 @@ public:
 
 
 public:
-    void printSharedPtrDoubleArray(const std::shared_ptr<double[]>& ptr, size_t size) {
-        if (!ptr) {
-            std::cout << "The shared_ptr is null." << std::endl;
-            return;
-        }
 
-        for (size_t i = 0; i < size; ++i) {
-            std::cout << ptr[i];
-            if (i < size - 1) {
-                std::cout << ", ";
-            }
-        }
-        std::cout << std::endl;
-    }
 
 
 
