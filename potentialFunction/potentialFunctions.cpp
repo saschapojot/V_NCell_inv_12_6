@@ -125,7 +125,7 @@ public:
         this->r2=std::pow(2.0*a2/b2,1.0/6.0);
         this->lm=(static_cast<double >(N)*(r1+r2))*1.5;
         this->eps=((r1+r2)/2.0)/8;
-        pow_result_tmp=std::shared_ptr<double[]>(new double[N], std::default_delete<double[]>());
+//        pow_result_tmp=std::shared_ptr<double[]>(new double[N], std::default_delete<double[]>());
 
         std::cout << "a1=" << a1 << ", b1=" << b1 << ", a2=" << a2 << ", b2=" << b2 << std::endl;
         std::cout<<"r1="<<r1<<", r2="<<r2<<std::endl;
@@ -141,7 +141,7 @@ public:
     /// @param L total length
     /// @param N unit cell number
     /// @return
-    double operator()(const double *d0Vec, double *d1Vec, const double&L) override {
+    double operator()(const double&L,const double *d0Vec,const double *d1Vec) override {
 //////////////////////////vectorization
 //    //the last element of d1Vec is compute from d0Vec, d1Vec's first N-1 elements, and L
 //    double d0SumNeg=vectorized_multiply_sum(d0Vec,-1,N);
@@ -176,7 +176,7 @@ public:
             sum+=-d1Vec[i];
         }
         sum+=L;
-        d1Vec[N-1]=sum;
+
 
         double val=0;
         for(int i=0;i<N;i++){
@@ -187,18 +187,19 @@ public:
             val+=-b1*std::pow(d0Vec[i],-6);
         }
 
-        for(int i=0;i<N;i++){
+        for(int i=0;i<N-1;i++){
             val+=a2*std::pow(d1Vec[i],-12);
         }
-        for(int i=0;i<N;i++){
+        for(int i=0;i<N-1;i++){
             val+=-b2*std::pow(d1Vec[i],-6);
         }
+        val+=a2*std::pow(sum,-12)-b2*std::pow(sum,-6);
         return val;
 
 
     }//end of () operator
 
-    double plain_for(const double *d0Vec, double *d1Vec, const double&L)override{
+    double plain_for(const double&L,const double *d0Vec,const double *d1Vec)override{
         double sum=0;
         for(int i=0;i<N;i++){
             sum+=-d0Vec[i];
@@ -207,7 +208,7 @@ public:
             sum+=-d1Vec[i];
         }
         sum+=L;
-        d1Vec[N-1]=sum;
+
 
         double val=0;
         for(int i=0;i<N;i++){
@@ -218,12 +219,13 @@ public:
             val+=-b1*std::pow(d0Vec[i],-6);
         }
 
-        for(int i=0;i<N;i++){
+        for(int i=0;i<N-1;i++){
             val+=a2*std::pow(d1Vec[i],-12);
         }
-        for(int i=0;i<N;i++){
+        for(int i=0;i<N-1;i++){
             val+=-b2*std::pow(d1Vec[i],-6);
         }
+        val+=a2*std::pow(sum,-12)-b2*std::pow(sum,-6);
         return val;
 
     }

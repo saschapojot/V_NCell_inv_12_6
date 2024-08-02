@@ -66,8 +66,22 @@ public:
                 paramCounter++;
                 continue;
             }//end reading T
+
+            //read unit cell number
+            if (paramCounter==1) {
+
+                iss >> N;
+
+                d0VecInit = std::shared_ptr<double[]>(new double[N], std::default_delete<double[]>());
+                d1VecInit = std::shared_ptr<double[]>(new double[N-1], std::default_delete<double[]>());
+
+                paramCounter++;
+                continue;
+
+            }
+
             //read coefficients
-            if(paramCounter==1){
+            if(paramCounter==2){
                 iss>>coefsToPotFunc;
                 paramCounter++;
                 continue;
@@ -76,27 +90,34 @@ public:
 
 
             //read potential function name
-            if(paramCounter==2){
+            if(paramCounter==3){
                 iss>>potFuncName;
                 paramCounter++;
                 continue;
             }//end reading potential function name
 
             //read initial values
-            if(paramCounter==3){
-                std::string temp;
-                if (std::getline(iss, temp, ',')){
-                    LInit=std::stod(temp);
+            if(paramCounter==4){
+               std::vector<double> values;
+                std::string valueStr;
+
+                while (std::getline(iss, valueStr, ',')) {
+                    values.push_back(std::stod(valueStr));
                 }
-                if (std::getline(iss, temp, ',')){
-                    y0Init=std::stod(temp);
+
+                LInit=values[0];
+                for(int i=1;i<=N;i++){
+                    d0VecInit[i-1]=values[i];
                 }
-                if (std::getline(iss, temp, ',')){
-                    z0Init=std::stod(temp);
+
+                for(int i=N+1;i<=2*N-1;i++){
+                    d1VecInit[i-N-1]=values[i];
                 }
-                if (std::getline(iss, temp, ',')){
-                    y1Init=std::stod(temp);
-                }
+
+
+
+
+
                 paramCounter++;
                 continue;
 
@@ -107,21 +128,21 @@ public:
 
 
             //read loopToWrite
-            if(paramCounter==4){
+            if(paramCounter==5){
                 iss>>loopToWrite;
                 paramCounter++;
                 continue;
             }//end reading loopToWrite
 
             //read newFlushNum
-            if(paramCounter==5){
+            if(paramCounter==6){
                 iss>>newFlushNum;
                 paramCounter++;
                 continue;
             }//end reading newFlushNum
 
             //read loopLastFile
-            if(paramCounter==6){
+            if(paramCounter==7){
                 //if loopLastFileStr is "-1", loopLastFile uses the overflowed value
                 //and loopLastFile+1 will be 0
                 iss>>loopLastFile;
@@ -130,14 +151,14 @@ public:
             }//end reading loopLastFile
 
             //read TDirRoot
-            if (paramCounter==7){
+            if (paramCounter==8){
                 iss>>TDirRoot;
                 paramCounter++;
                 continue;
             }//end reading TDirRoot
 
             //read U_dist_dataDir
-            if(paramCounter==8){
+            if(paramCounter==9){
                 iss>>U_dist_dataDir;
                 paramCounter++;
                 continue;
@@ -146,9 +167,15 @@ public:
 
 
         }//end while
+
+        std::cout<<"LInit="<<LInit<<std::endl;
+        std::cout<<"d0VecInit: \n";
+        printSharedPtrDoubleArray(d0VecInit,N);
+        std::cout<<"d1VecInit: \n";
+        printSharedPtrDoubleArray(d1VecInit,N-1);
         this->potFuncPtr = createPotentialFunction(potFuncName, coefsToPotFunc);
         potFuncPtr->init();
-        this->varNum = 5;
+        this->varNum = 2*N+1;//U,L,d0Vec,d1Vec
         try {
             this->U_dist_ptr= std::shared_ptr<double[]>(new double[loopToWrite * varNum],
                                                         std::default_delete<double[]>());
@@ -160,8 +187,7 @@ public:
             std::cerr << "Exception: " << e.what() << std::endl;
             std::exit(2);
         }
-        std::cout<<"LInit="<<LInit<<", y0Init="<<y0Init
-                 <<", z0Init="<<z0Init<<", y1Init="<<y1Init<<std::endl;
+
 
         std::cout<<"loopToWrite="<<loopToWrite<<std::endl;
         std::cout<<"newFlushNum="<<newFlushNum<<std::endl;
@@ -175,56 +201,50 @@ public:
 
 
 public:
-//    ///
-//    /// @param x
-//    /// @param leftEnd
-//    /// @param rightEnd
-//    /// @param eps
-//    /// @return return a value within distance eps from x, on the open interval (leftEnd, rightEnd)
-//   double generate_uni_open_interval(const double &x, const double &leftEnd, const double &rightEnd, const double &eps);
-//
+    void printSharedPtrDoubleArray(const std::shared_ptr<double[]>& ptr, size_t size) {
+        if (!ptr) {
+            std::cout << "The shared_ptr is null." << std::endl;
+            return;
+        }
 
+        for (size_t i = 0; i < size; ++i) {
+            std::cout << ptr[i];
+            if (i < size - 1) {
+                std::cout << ", ";
+            }
+        }
+        std::cout << std::endl;
+    }
 
-    ///
-    /// @param LCurr current value of L
-    /// @param y0Curr current value of y0
-    /// @param z0Curr current value of z0
-    /// @param y1Curr current value of y1
-    /// @param LNext  next value of L
-    /// @param y0Next next value of y0
-    /// @param z0Next next value of z0
-    /// @param y1Next next value of y1
-    /// @param LReset current value resetted
-    bool proposal(const double &LCurr, const double& y0Curr,const double& z0Curr, const double& y1Curr,
-                  double & LNext, double & y0Next, double & z0Next, double & y1Next, double &LReset);
 
 
     ///
     /// @param LCurr
-    /// @param y0Curr
-    /// @param z0Curr
-    /// @param y1Curr
+    /// @param d0VecCurr
+    /// @param d1VecCurr
+    /// @param LNext
+    /// @param d0VecNext
+    /// @param d1VecNext
+    /// @return
+    void proposal(const double &LCurr, const std::shared_ptr<double[]>& d0VecCurr ,const std::shared_ptr<double[]>&d1VecCurr,
+                  double & LNext, std::shared_ptr<double[]>& d0VecNext, std::shared_ptr<double[]>& d1VecNext);
+
+
+    ///
+    /// @param LCurr
+    /// @param d0VecCurr
+    /// @param d1VecCurr
     /// @param UCurr
     /// @param LNext
-    /// @param y0Next
-    /// @param z0Next
-    /// @param y1Next
+    /// @param d0VecNext
+    /// @param d1VecNext
     /// @param UNext
-    /// @param LReset
     /// @return
-    double acceptanceRatio(const double &LCurr,const double &y0Curr,
-                           const double &z0Curr, const double& y1Curr,const double& UCurr,
-                           const double &LNext, const double& y0Next,
-                           const double & z0Next, const double & y1Next,
-                           double &UNext,const double &LReset);
-//    ///
-//    /// @param x proposed value
-//    /// @param y current value
-//    /// @param a left end of interval
-//    /// @param b right end of interval
-//    /// @param epsilon half length
-//    /// @return proposal probability S(x|y)
-//    double S(const double &x, const double &y,const double &a, const double &b, const double &epsilon);
+    double acceptanceRatio(const double &LCurr,const std::shared_ptr<double[]>& d0VecCurr ,const std::shared_ptr<double[]>&d1VecCurr
+                           ,const double& UCurr,
+                           const double &LNext, const std::shared_ptr<double[]>& d0VecNext,
+                           const std::shared_ptr<double[]>&  d1VecNext,
+                           double &UNext);
 
     ///
 /// @param y
@@ -264,10 +284,10 @@ public:
     /// @return
     double integrand(const double &y, const double& x,const double &a, const double &b);
 
-    void execute_mc(const double& L,const double &y0, const double &z0, const double& y1, const size_t & loopInit, const size_t & flushNum);
+    void execute_mc(const double& L,const std::shared_ptr<double[]>& d0Vec, const std::shared_ptr<double[]>& d1Vec, const size_t & loopInit, const size_t & flushNum);
 
 
-    static void saveArrayToCSV(const std::shared_ptr<double[]>& array, const  size_t& arraySize, const std::string& filename, const size_t& numbersPerRow) ;
+     void saveArrayToCSV(const std::shared_ptr<double[]>& array, const  int& arraySize, const std::string& filename, const int& numbersPerRow) ;
 
     void init_and_run();
 
@@ -301,14 +321,18 @@ public:
     std::string TDirRoot;
     std::string U_dist_dataDir;
     std::shared_ptr<double[]> U_dist_ptr;
-    size_t varNum;
+    int varNum;
     double LInit;
-    double y0Init;
-    double z0Init;
-    double y1Init;
+    std::shared_ptr<double[]> d0VecInit;
+    std::shared_ptr<double[]> d1VecInit;
+
+//    double y0Init;
+//    double z0Init;
+//    double y1Init;
     std::string coefsToPotFunc;
     std::string potFuncName;
     double M;
+    int N;//unit cell number
 
 };
 
