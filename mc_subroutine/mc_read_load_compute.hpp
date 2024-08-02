@@ -271,6 +271,25 @@ public:
 
     void init_and_run();
 
+
+    template<class T>
+            void print_shared_ptr(const std::shared_ptr<T> &ptr,const int& size){
+        if (!ptr) {
+            std::cout << "Pointer is null." << std::endl;
+            return;
+        }
+
+        for(int i=0;i<size;i++){
+            if(i<size-1){
+                std::cout<<ptr[i]<<",";
+            }
+            else{
+                std::cout<<ptr[i]<<std::endl;
+            }
+        }
+
+            }
+
 public:
     double T;// temperature
     double beta;
