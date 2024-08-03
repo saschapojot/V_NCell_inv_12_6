@@ -91,7 +91,7 @@ def auto_corrForOneColumn(colVec):
     minAutc=np.min(acfOfVecAbs)
 
     lagVal=-1
-    if minAutc<eps:
+    if minAutc<=eps:
         lagVal=np.where(acfOfVecAbs<=eps)[0][0]
     return same,lagVal
 
