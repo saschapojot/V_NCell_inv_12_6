@@ -124,22 +124,22 @@ def pltU_dist(oneTFile):
     LConfHalfLength=np.sqrt(LVar/len(LVec))
     print("E(L)="+str(LMean))
 
-    d0Array=df.iloc[:,2:unitCellNum+2]
-    d1Array=df.iloc[:,unitCellNum+2:]
+    d1Array=df.iloc[:,2:unitCellNum+2]
+    d2Array=df.iloc[:,unitCellNum+2:]
 
-    d0Mean=np.mean(d0Array,axis=0)
     d1Mean=np.mean(d1Array,axis=0)
+    d2Mean=np.mean(d2Array,axis=0)
 
-    d0Var=np.var(d0Array,axis=0,ddof=1)
     d1Var=np.var(d1Array,axis=0,ddof=1)
+    d2Var=np.var(d2Array,axis=0,ddof=1)
 
-    d0ConfHalfInterval=np.sqrt(d0Var/LLength)
     d1ConfHalfInterval=np.sqrt(d1Var/LLength)
+    d2ConfHalfInterval=np.sqrt(d2Var/LLength)
 
     return [meanU,varU,UConfHalfLength,
             LMean,LVar,LConfHalfLength,
-            d0Mean,d0ConfHalfInterval,
-            d1Mean,d1ConfHalfInterval]
+            d1Mean,d1ConfHalfInterval,
+            d2Mean,d2ConfHalfInterval]
 
 UMeanValsAll=[]
 UVarValsAll=[]
@@ -149,16 +149,16 @@ LMeanValsAll=[]
 LVarValsAll=[]
 LConfHalfLengthAll=[]
 
-d0MeanVecsAll=[]
-d0HalfIntervalAll=[]
-
 d1MeanVecsAll=[]
 d1HalfIntervalAll=[]
+
+d2MeanVecsAll=[]
+d2HalfIntervalAll=[]
 tStatsStart=datetime.now()
 
 for k in range(0,len(sortedTFiles)):
     oneTFile=sortedTFiles[k]
-    meanU,varU,UConfHalfLength,LMean,LVar,LConfHalfLength,d0Mean,d0ConfHalfInterval,d1Mean,d1ConfHalfInterval=pltU_dist(oneTFile)
+    meanU,varU,UConfHalfLength,LMean,LVar,LConfHalfLength,d1Mean,d1ConfHalfInterval,d2Mean,d2ConfHalfInterval=pltU_dist(oneTFile)
 
     UMeanValsAll.append(meanU)
     UVarValsAll.append(varU)
@@ -168,11 +168,11 @@ for k in range(0,len(sortedTFiles)):
     LVarValsAll.append(LVar)
     LConfHalfLengthAll.append(LConfHalfLength)
 
-    d0MeanVecsAll.append(d0Mean)
-    d0HalfIntervalAll.append(d0ConfHalfInterval)
-
     d1MeanVecsAll.append(d1Mean)
     d1HalfIntervalAll.append(d1ConfHalfInterval)
+
+    d2MeanVecsAll.append(d2Mean)
+    d2HalfIntervalAll.append(d2ConfHalfInterval)
 
 
 UMeanValsAll=np.array(UMeanValsAll)
@@ -183,11 +183,11 @@ LMeanValsAll=np.array(LMeanValsAll)
 LVarValsAll=np.array(LVarValsAll)
 LConfHalfLengthAll=np.array(LConfHalfLengthAll)
 
-d0MeanVecsAll=np.array(d0MeanVecsAll)
-d0HalfIntervalAll=np.array(d0HalfIntervalAll)
-
 d1MeanVecsAll=np.array(d1MeanVecsAll)
 d1HalfIntervalAll=np.array(d1HalfIntervalAll)
+
+d2MeanVecsAll=np.array(d2MeanVecsAll)
+d2HalfIntervalAll=np.array(d2HalfIntervalAll)
 
 tStatsEnd=datetime.now()
 print("stats total time: ",tStatsEnd-tStatsStart)
@@ -228,20 +228,20 @@ plt.close()
 
 
 #######################################################
-#d0 vals
-d0ToPlt=d0MeanVecsAll.T
-d0ToPltNRow,d0ToPltNCol=d0ToPlt.shape
-d0HalfInterToPlt=d0HalfIntervalAll.T
+#d1 vals
+d1ToPlt=d1MeanVecsAll.T
+d1ToPltNRow,d1ToPltNCol=d1ToPlt.shape
+d1HalfInterToPlt=d1HalfIntervalAll.T
 
-fig,axes=plt.subplots(d0ToPltNRow,1,figsize=(10,10))
-for i in range(0,d0ToPltNRow):
-    axes[i].errorbar(TToPlt, d0ToPlt[i,:], yerr=d0HalfInterToPlt[i,:], fmt='o', color="black", ecolor='r', capsize=5, label="d"+str(i)+"A"+str(i)+"B")
+fig,axes=plt.subplots(d1ToPltNRow,1,figsize=(10,10))
+for i in range(0,d1ToPltNRow):
+    axes[i].errorbar(TToPlt, d1ToPlt[i,:], yerr=d1HalfInterToPlt[i,:], fmt='o', color="black", ecolor='r', capsize=5, label="d"+str(i)+"A"+str(i)+"B")
     axes[i].set_xlabel('$T$')
     axes[i].set_ylabel('E('+"d"+str(i)+"A"+str(i)+"B"+")")
     axes[i].set_title("Intracell distance between "+str(i)+"A and "+str(i)+"B")
     axes[i].legend()
 
-plt.savefig(csvDataFolderRoot+"/d0.png")
+plt.savefig(csvDataFolderRoot+"/d1.png")
 plt.close()
 #######################################################
 
