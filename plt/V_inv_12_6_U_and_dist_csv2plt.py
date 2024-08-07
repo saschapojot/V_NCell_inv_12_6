@@ -19,7 +19,7 @@ unitCellNum=2
 
 csvDataFolderRoot="../dataAllUnitCell"+str(unitCellNum)+"/row"+str(rowNum)+"/csvOutAll/"
 
-inCsvFile="../V2Params.csv"
+inCsvFile="../V_inv_12_6Params.csv"
 
 TVals=[]
 TFileNames=[]
@@ -123,6 +123,7 @@ def pltU_dist(oneTFile):
     LVar=np.var(LVec,ddof=1)
     LConfHalfLength=np.sqrt(LVar/len(LVec))
     print("E(L)="+str(LMean))
+    LVMean=np.mean(LVec*UVec)
 
     d1Array=df.iloc[:,2:unitCellNum+2]
     d2Array=df.iloc[:,unitCellNum+2:]
@@ -136,7 +137,7 @@ def pltU_dist(oneTFile):
     d1ConfHalfInterval=np.sqrt(d1Var/LLength)
     d2ConfHalfInterval=np.sqrt(d2Var/LLength)
 
-    return [meanU,varU,UConfHalfLength,
+    return [meanU,varU,UConfHalfLength,LVMean,
             LMean,LVar,LConfHalfLength,
             d1Mean,d1ConfHalfInterval,
             d2Mean,d2ConfHalfInterval]
@@ -144,6 +145,7 @@ def pltU_dist(oneTFile):
 UMeanValsAll=[]
 UVarValsAll=[]
 UConfHalfLengthAll=[]
+LVMeanAll=[]
 
 LMeanValsAll=[]
 LVarValsAll=[]
@@ -158,11 +160,12 @@ tStatsStart=datetime.now()
 
 for k in range(0,len(sortedTFiles)):
     oneTFile=sortedTFiles[k]
-    meanU,varU,UConfHalfLength,LMean,LVar,LConfHalfLength,d1Mean,d1ConfHalfInterval,d2Mean,d2ConfHalfInterval=pltU_dist(oneTFile)
+    meanU,varU,UConfHalfLength,LVMean,LMean,LVar,LConfHalfLength,d1Mean,d1ConfHalfInterval,d2Mean,d2ConfHalfInterval=pltU_dist(oneTFile)
 
     UMeanValsAll.append(meanU)
     UVarValsAll.append(varU)
     UConfHalfLengthAll.append(UConfHalfLength)
+    LVMeanAll.append(LVMean)
 
     LMeanValsAll.append(LMean)
     LVarValsAll.append(LVar)
@@ -178,6 +181,7 @@ for k in range(0,len(sortedTFiles)):
 UMeanValsAll=np.array(UMeanValsAll)
 UVarValsAll=np.array(UVarValsAll)
 UConfHalfLengthAll=np.array(UConfHalfLengthAll)
+LVMeanAll=np.array(LVMeanAll)
 
 LMeanValsAll=np.array(LMeanValsAll)
 LVarValsAll=np.array(LVarValsAll)
@@ -189,6 +193,8 @@ d1HalfIntervalAll=np.array(d1HalfIntervalAll)
 d2MeanVecsAll=np.array(d2MeanVecsAll)
 d2HalfIntervalAll=np.array(d2HalfIntervalAll)
 
+# print("d1:"+str(len(d1MeanVecsAll[0])))
+# print("d2:"+str(len(d2MeanVecsAll[0])))
 tStatsEnd=datetime.now()
 print("stats total time: ",tStatsEnd-tStatsStart)
 sortedTVals=np.array(sortedTVals)
@@ -225,8 +231,50 @@ plt.close()
 
 
 #######################################################
+#######################################################
+# C
 
+CValsAll=[]
+for j in range(0,len(UMeanValsAll)):
+    TTmp=sortedTVals[j]
+    CValsAll.append((UVarValsAll[j])/TTmp**2)
 
+CValsAll=np.array(CValsAll)
+#plot C
+plt.figure()
+plt.scatter(TToPlt,CValsAll[TInds],color="violet",label="mc")
+# varVVals=[varV(T) for T in interpolatedTVals]
+# plt.plot(interpolatedTVals,varVVals,color="navy",label="theory")
+plt.title("C")
+plt.xlabel("$T$")
+plt.legend(loc="best")
+plt.savefig(csvDataFolderRoot+"/C.png")
+plt.close()
+
+#######################################################
+#######################################################
+#alpha
+
+LVDiffTmp=LVMeanAll-LMeanValsAll*UMeanValsAll
+alphaValsAll=[]
+for j in range(0,len(sortedTVals)):
+    TTmp=sortedTVals[j]
+    alphaValsAll.append(LVDiffTmp[j]/(TTmp**2*LMeanValsAll[j]))
+alphaValsAll=np.array(alphaValsAll)
+
+#plot alpha
+# print(TToPlt)
+# print(alphaValsAll[TInds])
+plt.figure()
+plt.scatter(TToPlt,alphaValsAll[TInds],color="violet",label="mc")
+# varVVals=[varV(T) for T in interpolatedTVals]
+# plt.plot(interpolatedTVals,varVVals,color="navy",label="theory")
+plt.title("C")
+plt.xlabel("$T$")
+plt.legend(loc="best")
+plt.savefig(csvDataFolderRoot+"/alpha.png")
+plt.close()
+#######################################################
 #######################################################
 #d1 vals
 d1ToPlt=d1MeanVecsAll.T
@@ -275,4 +323,69 @@ plt.legend(loc="best")
 plt.savefig(csvDataFolderRoot+"/varL.png")
 plt.close()
 
+#######################################################
+
+#######################################################
+#plot d1, d2 using lattice
+d1d2InterleavedArray=[]
+for n in range(0,len(d1MeanVecsAll)):
+    d1VecOneTemp=d1MeanVecsAll[n]
+    d2VecOneTemp=d2MeanVecsAll[n]
+    LOneTmp=LMeanValsAll[n]
+    # print(d1VecOneTemp)
+    # print(d2VecOneTemp)
+
+    rst=[]
+    for i ,(x,y) in enumerate(zip(d1VecOneTemp,d2VecOneTemp)):
+        rst.append(x)
+        rst.append(y)
+    rst.extend(d1VecOneTemp[len(d2VecOneTemp):])
+    dLast=LOneTmp-np.sum(rst)
+    rst.append(dLast)
+    rst=np.array(rst)
+    rst=np.insert(rst,0,0)
+
+    d1d2InterleavedArray.append(rst)
+
+d1d2InterleavedArray=np.array(d1d2InterleavedArray)
+
+positions=np.cumsum(d1d2InterleavedArray,axis=1)
+
+xANames=["x"+str(i)+"A" for i in  range(0,unitCellNum)]
+xANames.append("x0A")
+xBNames=["x"+str(i)+"B" for i in  range(0,unitCellNum)]
+
+xNames=[]
+for i,(x,y) in enumerate(zip(xANames,xBNames)):
+    xNames.append(x)
+    xNames.append(y)
+xNames.extend(xANames[len(xBNames):])
+
+fig,axes=plt.subplots(len(sortedTVals),1,figsize=(20,10))
+for n in  range(0,len(sortedTVals)):
+    positionOneTemp=positions[n,:]
+    for i , pos in enumerate(positionOneTemp):
+        color='red' if i % 2 == 0 else 'blue'
+        axes[n].plot(pos,0,"o",color=color)
+    axes[n].set_xticks(positionOneTemp)
+    axes[n].set_xticklabels(xNames)
+    # Hide the y-axis
+    axes[n].get_yaxis().set_visible(False)
+    # Draw a horizontal line representing the axis
+    axes[n].axhline(0, color='black', linewidth=0.5)
+
+    d1d2InterTmp=d1d2InterleavedArray[n,:]
+    textPos=[]
+    for j in range(0,len(positionOneTemp)-1):
+        posTmp=(positionOneTemp[j+1]-positionOneTemp[j])/2+positionOneTemp[j]
+        textPos.append(posTmp)
+
+    for j,val in enumerate(textPos):
+        axes[n].text(val,0.1,np.round(d1d2InterTmp[j+1],2),ha='center', va='bottom', fontsize=12)
+
+    axes[n].set_title("T="+str(sortedTVals[n]))
+
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+fig.suptitle('PBC, average distances')
+plt.savefig(csvDataFolderRoot+"/lattice.png")
 #######################################################
