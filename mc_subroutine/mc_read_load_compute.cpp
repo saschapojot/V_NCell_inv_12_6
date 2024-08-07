@@ -8,27 +8,27 @@
 
 
 
-void mc_computation::execute_mc(const double& L,const std::shared_ptr<double[]>& d0Vec, const std::shared_ptr<double[]>& d1Vec, const size_t & loopInit, const size_t & flushNum){
+void mc_computation::execute_mc(const double& L,const std::shared_ptr<double[]>& d1Vec, const std::shared_ptr<double[]>& d2Vec, const size_t & loopInit, const size_t & flushNum){
 
     double LCurr = L;
-    std::shared_ptr<double[]> d0VecCurr=std::shared_ptr<double[]>(new double[N], std::default_delete<double[]>());
+    std::shared_ptr<double[]> d1VecCurr=std::shared_ptr<double[]>(new double[N], std::default_delete<double[]>());
 
-    std::shared_ptr<double[]> d1VecCurr=std::shared_ptr<double[]>(new double[N-1], std::default_delete<double[]>());
+    std::shared_ptr<double[]> d2VecCurr=std::shared_ptr<double[]>(new double[N-1], std::default_delete<double[]>());
 
-    std::memcpy(d0VecCurr.get(),d0Vec.get(),N*sizeof (double ));
-    std::memcpy(d1VecCurr.get(),d1Vec.get(),(N-1)*sizeof (double ));
+    std::memcpy(d1VecCurr.get(),d1Vec.get(),N*sizeof (double ));
+    std::memcpy(d2VecCurr.get(),d2Vec.get(),(N-1)*sizeof (double ));
 
-//    std::cout<<"d0VecCurr: ";
-//    print_shared_ptr(d0VecCurr,N);
 //    std::cout<<"d1VecCurr: ";
-//    print_shared_ptr(d1VecCurr,N-1);
+//    print_shared_ptr(d1VecCurr,N);
+//    std::cout<<"d2VecCurr: ";
+//    print_shared_ptr(d2VecCurr,N-1);
 
     //initialize next values
     double LNext;
-    std::shared_ptr<double[]> d0VecNext=std::shared_ptr<double[]>(new double[N], std::default_delete<double[]>());
-    std::shared_ptr<double[]> d1VecNext=std::shared_ptr<double[]>(new double[N-1], std::default_delete<double[]>());
+    std::shared_ptr<double[]> d1VecNext=std::shared_ptr<double[]>(new double[N], std::default_delete<double[]>());
+    std::shared_ptr<double[]> d2VecNext=std::shared_ptr<double[]>(new double[N-1], std::default_delete<double[]>());
 
-    double UCurr;// = (*potFuncPtr)(LCurr, y0Curr, z0Curr, y1Curr);
+    double UCurr;
     std::random_device rd;
     std::ranlux24_base e2(rd());
     std::uniform_real_distribution<> distUnif01(0, 1);//[0,1)
@@ -43,16 +43,16 @@ void mc_computation::execute_mc(const double& L,const std::shared_ptr<double[]>&
 //            double y1Next;
 //            double LReset;
 
-            this->proposal(LCurr,d0VecCurr,d1VecCurr,LNext,d0VecNext,d1VecNext);
+            this->proposal_unit(LCurr,d1VecCurr,d2VecCurr,LNext,d1VecNext,d2VecNext);
             double UNext;
-            UCurr=(*potFuncPtr)(LCurr,d0VecCurr.get(),d1VecCurr.get());
-            double r= acceptanceRatio(LCurr,d0VecCurr,d1VecCurr,UCurr,
-                                      LNext,d0VecNext,d1VecNext,UNext);
+            UCurr=(*potFuncPtr)(LCurr,d1VecCurr.get(),d2VecCurr.get());
+            double r= acceptanceRatio_uni(LCurr,d1VecCurr,d2VecCurr,UCurr,
+                                      LNext,d1VecNext,d2VecNext,UNext);
             double u = distUnif01(e2);
             if (u <= r) {
                 LCurr = LNext;
-                std::memcpy(d0VecCurr.get(),d0VecNext.get(),N*sizeof (double ));
-                std::memcpy(d1VecCurr.get(),d1VecNext.get(),(N-1)*sizeof (double ));
+                std::memcpy(d1VecCurr.get(),d1VecNext.get(),N*sizeof (double ));
+                std::memcpy(d2VecCurr.get(),d2VecNext.get(),(N-1)*sizeof (double ));
 
 
                 UCurr = UNext;
@@ -61,10 +61,10 @@ void mc_computation::execute_mc(const double& L,const std::shared_ptr<double[]>&
             U_dist_ptr[varNum*j+0]=UCurr;
             U_dist_ptr[varNum*j+1]=LCurr;
             for(int n=2;n<=1+N;n++){
-                U_dist_ptr[varNum*j+n]=d0VecCurr[n-2];
+                U_dist_ptr[varNum*j+n]=d1VecCurr[n-2];
             }
             for(int n=N+2;n<=2*N;n++){
-                U_dist_ptr[varNum*j+n]=d1VecCurr[n-N-2];
+                U_dist_ptr[varNum*j+n]=d2VecCurr[n-N-2];
             }
 
         }//end for loop
@@ -105,10 +105,10 @@ void mc_computation::saveArrayToCSV(const std::shared_ptr<double[]>& array, cons
 
     outFile<<"U,"<<"L";
     for(int i=0;i<N;i++){
-        outFile<<",d0"+std::to_string(i);
+        outFile<<",d1"+std::to_string(i);
     }
     for(int i=0;i<N-1;i++){
-        outFile<<",d1"+std::to_string(i);
+        outFile<<",d2"+std::to_string(i);
     }
     outFile<<"\n";
     for (int i = 0; i < arraySize; ++i) {
@@ -131,7 +131,7 @@ void mc_computation::saveArrayToCSV(const std::shared_ptr<double[]>& array, cons
 }
 
 void mc_computation::init_and_run(){
-    this->execute_mc(LInit,d0VecInit,d1VecInit,loopLastFile+1,newFlushNum);
+    this->execute_mc(LInit,d1VecInit,d2VecInit,loopLastFile+1,newFlushNum);
 
 
 }
@@ -228,24 +228,24 @@ double mc_computation::integrand(const double &y, const double& x,const double &
 
 ///
 /// @param LCurr
-/// @param d0VecCurr
 /// @param d1VecCurr
+/// @param d2VecCurr
 /// @param LNext
-/// @param d0VecNext
 /// @param d1VecNext
+/// @param d2VecNext
 /// @return
-void mc_computation::proposal(const double &LCurr, const std::shared_ptr<double[]>& d0VecCurr ,const std::shared_ptr<double[]>&d1VecCurr,
-              double & LNext, std::shared_ptr<double[]>& d0VecNext, std::shared_ptr<double[]>& d1VecNext){
+void mc_computation::proposal(const double &LCurr, const std::shared_ptr<double[]>& d1VecCurr ,const std::shared_ptr<double[]>&d2VecCurr,
+              double & LNext, std::shared_ptr<double[]>& d1VecNext, std::shared_ptr<double[]>& d2VecNext){
 
 
     //proposal using truncated Gaussian
     double lm = potFuncPtr->getLm();
     for(int i=0;i<N;i++){
-        d0VecNext[i]=reject_sampling_one_data(d0VecCurr[i],0,lm);
+        d1VecNext[i]=reject_sampling_one_data(d1VecCurr[i],0,lm);
     }
 
     for(int i=0;i<N-1;i++){
-        d1VecNext[i]=reject_sampling_one_data(d1VecCurr[i],0,lm);
+        d2VecNext[i]=reject_sampling_one_data(d2VecCurr[i],0,lm);
     }
 
     LNext=reject_sampling_one_data(LCurr,0,lm);
@@ -255,23 +255,23 @@ void mc_computation::proposal(const double &LCurr, const std::shared_ptr<double[
 
 ///
 /// @param LCurr
-/// @param d0VecCurr
 /// @param d1VecCurr
+/// @param d2VecCurr
 /// @param UCurr
 /// @param LNext
-/// @param d0VecNext
 /// @param d1VecNext
+/// @param d2VecNext
 /// @param UNext
 /// @return
-double mc_computation::acceptanceRatio(const double &LCurr,const std::shared_ptr<double[]>& d0VecCurr ,const std::shared_ptr<double[]>&d1VecCurr
+double mc_computation::acceptanceRatio(const double &LCurr,const std::shared_ptr<double[]>& d1VecCurr ,const std::shared_ptr<double[]>&d2VecCurr
         ,const double& UCurr,
-                       const double &LNext, const std::shared_ptr<double[]>& d0VecNext,
-                       const std::shared_ptr<double[]>&  d1VecNext,
+                       const double &LNext, const std::shared_ptr<double[]>& d1VecNext,
+                       const std::shared_ptr<double[]>&  d2VecNext,
                        double &UNext){
 
     double lm=potFuncPtr->getLm();
 
-    UNext=(*potFuncPtr)(LNext,d0VecNext.get(),d1VecNext.get());
+    UNext=(*potFuncPtr)(LNext,d1VecNext.get(),d2VecNext.get());
 
     double numerator = -this->beta*UNext;
     double denominator=-this->beta*UCurr;
@@ -285,20 +285,187 @@ double mc_computation::acceptanceRatio(const double &LCurr,const std::shared_ptr
 
 
     for(int i=0;i<N;i++){
-    double zd0OneCurrVal= zVal(d0VecCurr[i],0,lm);
-    double zd0OneNextVal= zVal(d0VecNext[i],0,lm);
-    double ratio_d0OneVal=zd0OneCurrVal/zd0OneNextVal;
-    R*=ratio_d0OneVal;
+    double zd1OneCurrVal= zVal(d1VecCurr[i],0,lm);
+    double zd1OneNextVal= zVal(d1VecNext[i],0,lm);
+    double ratio_d1OneVal=zd1OneCurrVal/zd1OneNextVal;
+    R*=ratio_d1OneVal;
 
     }
 
     for(int i=0;i<N-1;i++){
-        double zd1OneCurrVal= zVal(d1VecCurr[i],0,lm);
-        double zd1OneNextVal= zVal(d1VecNext[i],0,lm);
-        double ratio_d1OneVal=zd1OneCurrVal/zd1OneNextVal;
-        R*=ratio_d1OneVal;
+        double zd2OneCurrVal= zVal(d2VecCurr[i],0,lm);
+        double zd2OneNextVal= zVal(d2VecNext[i],0,lm);
+        double ratio_d2OneVal=zd2OneCurrVal/zd2OneNextVal;
+        R*=ratio_d2OneVal;
     }
 
+    return std::min(1.0,R);
+
+
+
+}
+
+
+///
+/// @param x proposed value
+/// @param y current value
+/// @param a left end of interval
+/// @param b right end of interval
+/// @param epsilon half length
+/// @return proposal probability S(x|y)
+double mc_computation::S_uni(const double &x, const double &y,const double &a, const double &b, const double &epsilon){
+
+    if (a<y and y<a+epsilon){
+        return 1.0/(y-a+epsilon);
+    } else if( a+epsilon<=y and y<b+epsilon){
+        return 1.0/(2.0*epsilon);
+    }else if(b-epsilon<=y and y<b){
+        return 1/(b-y+epsilon);
+    } else{
+
+        std::cerr<<"value out of range."<<std::endl;
+        std::exit(10);
+
+
+    }
+
+
+}
+
+
+///
+/// @param LCurr
+/// @param d1VecCurr
+/// @param d2VecCurr
+/// @param LNext
+/// @param d1VecNext
+/// @param d2VecNext
+void mc_computation::proposal_unit(const double &LCurr, const std::shared_ptr<double[]>& d1VecCurr ,const std::shared_ptr<double[]>&d2VecCurr,
+                   double & LNext, std::shared_ptr<double[]>& d1VecNext, std::shared_ptr<double[]>& d2VecNext){
+    //proposal using uniform distribution
+    double lm=potFuncPtr->getLm();
+    for(int i=0;i<N;i++){
+        d1VecNext[i]= generate_uni_open_interval(d1VecCurr[i],0,lm,h);
+    }
+
+    for(int i=0;i<N-1;i++){
+        d2VecNext[i]=generate_uni_open_interval(d2VecCurr[i],0,lm,h);
+    }
+
+    LNext=generate_uni_open_interval(LCurr,0,lm,h);
+}
+
+
+///
+/// @param x
+/// @param leftEnd
+/// @param rightEnd
+/// @param eps
+/// @return return a value within distance eps from x, on the open interval (leftEnd, rightEnd)
+double mc_computation::generate_uni_open_interval(const double &x, const double &leftEnd, const double &rightEnd, const double &eps){
+
+
+    double xMinusEps=x-eps;
+    double xPlusEps=x+eps;
+
+    double unif_left_end=xMinusEps<leftEnd?leftEnd:xMinusEps;
+    double unif_right_end=xPlusEps>rightEnd?rightEnd:xPlusEps;
+//    std::cout << std::setprecision(std::numeric_limits<double>::max_digits10);
+//std::cout<<"x="<<x<<std::endl;
+//std::cout<<"unif_left_end="<<unif_left_end<<std::endl;
+//std::cout<<"unif_right_end="<<unif_right_end<<std::endl;
+    std::random_device rd;
+    std::ranlux24_base e2(rd());
+// in std::uniform_real_distribution<> distUnif(a,b), the random numbers are from interval [a, b)
+//we need random numbers from interval (a,b)
+    double unif_left_end_double_on_the_right=std::nextafter(unif_left_end, std::numeric_limits<double>::infinity());
+//    std::cout<<"unif_left_end_double_on_the_right="<<unif_left_end_double_on_the_right<<std::endl;
+
+
+
+    std::uniform_real_distribution<> distUnif(unif_left_end_double_on_the_right,unif_right_end); //[unif_left_end_double_on_the_right, unif_right_end)
+
+    double xNext=distUnif(e2);
+    return xNext;
+
+
+
+}
+
+///
+/// @param LCurr
+/// @param d1VecCurr
+/// @param d2VecCurr
+/// @param UCurr
+/// @param LNext
+/// @param d1VecNext
+/// @param d2VecNext
+/// @param UNext
+/// @return
+double mc_computation::acceptanceRatio_uni(const double &LCurr,const std::shared_ptr<double[]>& d1VecCurr ,const std::shared_ptr<double[]>&d2VecCurr
+        ,const double& UCurr,
+                           const double &LNext, const std::shared_ptr<double[]>& d1VecNext,
+                           const std::shared_ptr<double[]>&  d2VecNext,
+                           double &UNext) {
+
+
+    double lm = potFuncPtr->getLm();
+    UNext = (*potFuncPtr)(LNext, d1VecNext.get(), d2VecNext.get());
+    double numerator = -this->beta * UNext;
+    double denominator = -this->beta * UCurr;
+    double R = std::exp(numerator - denominator);
+
+    double S_LCurrNext = S_uni(LCurr, LNext, 0, lm, h);
+    double S_LNextCurr = S_uni(LNext, LCurr, 0, lm, h);
+
+    double ratio_L = S_LCurrNext / S_LNextCurr;
+    if (std::fetestexcept(FE_DIVBYZERO)) {
+        std::cout << "Division by zero exception caught." << std::endl;
+        std::exit(15);
+    }
+
+    if (std::isnan(ratio_L)) {
+        std::cout << "The result is NaN." << std::endl;
+        std::exit(15);
+    }
+    R *= ratio_L;
+    //end L ratio
+
+    for(int i=0;i<N;i++){
+        double S_d1iCurrNext= S_uni(d1VecCurr[i],d1VecNext[i],0,lm,h);
+        double S_d1iNextCurr= S_uni(d1VecNext[i],d1VecCurr[i],0,lm,h);
+        double ratio_d1i=S_d1iCurrNext/S_d1iNextCurr;
+        if (std::fetestexcept(FE_DIVBYZERO)) {
+            std::cout << "Division by zero exception caught." << std::endl;
+            std::exit(15);
+        }
+
+        if (std::isnan(ratio_d1i)) {
+            std::cout << "The result is NaN." << std::endl;
+            std::exit(15);
+        }
+        R*=ratio_d1i;
+
+
+
+    }//end d1 ratio
+
+    for(int i=0;i<N-1;i++){
+        double S_d2iCurrNext= S_uni(d2VecCurr[i],d2VecNext[i],0,lm,h);
+        double S_d2iNextCurr= S_uni(d2VecNext[i],d2VecCurr[i],0,lm,h);
+        double ratio_d2i=S_d2iCurrNext/S_d2iNextCurr;
+        if (std::fetestexcept(FE_DIVBYZERO)) {
+            std::cout << "Division by zero exception caught." << std::endl;
+            std::exit(15);
+        }
+
+        if (std::isnan(ratio_d2i)) {
+            std::cout << "The result is NaN." << std::endl;
+            std::exit(15);
+        }
+        R*=ratio_d2i;
+
+    }//end ratio d2
     return std::min(1.0,R);
 
 

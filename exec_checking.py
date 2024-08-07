@@ -10,13 +10,14 @@ def format_using_decimal(value):
     formatted_value = decimal_value.quantize(Decimal(1)) if decimal_value == decimal_value.to_integral() else decimal_value.normalize()
     return str(formatted_value)
 
-T=2
+T=0.5
+unitCellNum=2
 
 TStr=format_using_decimal(T)
 #############################################
 #launch mc, i.e., giving initial conditions
 
-launchResult=subprocess.run(["python3", "launch_one_run.py", "./dataAll/row0/T"+TStr+"/run_T"+str(T)+".mc.conf"])
+launchResult=subprocess.run(["python3", "launch_one_run.py", "./dataAllUnitCell"+str(unitCellNum)+"/row0/T"+TStr+"/run_T"+str(T)+".mc.conf"])
 print(launchResult.stdout)
 if launchResult.returncode!=0:
     print("error in launch one run: "+str(launchResult.returncode))
@@ -59,7 +60,7 @@ if stderr:
 #############################################
 #run executable
 cppExecutable="./run_mc"
-cpp_process = subprocess.Popen([cppExecutable, "./dataAll/row0/T"+TStr+"/cppIn.txt" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+cpp_process = subprocess.Popen([cppExecutable, "./dataAllUnitCell"+str(unitCellNum)+"/row0/T"+TStr+"/cppIn.txt" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 while True:
     output = cpp_process.stdout.readline()
     if output == '' and cpp_process.poll() is not None:
@@ -76,7 +77,7 @@ if stderr:
 
 #############################################
 #check statistics
-stats_process=subprocess.Popen(["python3", "check_after_one_run.py", "./dataAll/row0/T"+TStr+"/run_T"+str(T)+".mc.conf"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+stats_process=subprocess.Popen(["python3", "check_after_one_run.py", "./dataAllUnitCell"+str(unitCellNum)+"/row0/T"+TStr+"/run_T"+str(T)+".mc.conf"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 while True:
     output = stats_process.stdout.readline()
     if output == '' and stats_process.poll() is not None:

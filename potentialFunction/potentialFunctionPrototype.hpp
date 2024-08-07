@@ -18,8 +18,8 @@
 class potentialFunction {
 //base class for potential function
 public:
-    virtual double operator()(const double&L,const double *d0Vec,const  double *d1Vec) = 0;
-    virtual double plain_for(const double&L,const double *d0Vec, const double *d1Vec)=0;
+    virtual double operator()(const double&L,const double *d1Vec,const  double *d2Vec) = 0;
+    virtual double plain_for(const double&L,const double *d1Vec, const double *d2Vec)=0;
     virtual void json2Coefs(const std::string &coefsStr)=0;
     virtual  void init()=0;
     virtual double getLm() const = 0; //  method to get lm

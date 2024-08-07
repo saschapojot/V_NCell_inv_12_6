@@ -136,7 +136,7 @@ def checkU_distDataFilesForOneT(U_dist_csv_dir):
     startingFileName=U_dist_sortedDataFilesToRead[startingFileInd]
     # print(startingFileName)
     #read the starting U_dist csv file
-    in_dfStart=pd.read_csv(startingFileName,dtype={"U":float,"L":float,"y0":float,"z0":float,"y1":float})
+    in_dfStart=pd.read_csv(startingFileName)
 
     in_nRowStart,in_nColStart=in_dfStart.shape
     if startingVecPosition<0:
@@ -144,14 +144,12 @@ def checkU_distDataFilesForOneT(U_dist_csv_dir):
         startingVecPosition=int(in_nRowStart/2)
 
 
-    # y0Vec=np.array(in_dfStart.loc[startingVecPosition:,"y0"])
-    # z0Vec=np.array(in_dfStart.loc[startingVecPosition:,"z0"])
-    # y1Vec=np.array(in_dfStart.loc[startingVecPosition:,"y1"])
+
     distArray=np.array(in_dfStart)
 
     #read the rest of the csv files
     for csv_file in U_dist_sortedDataFilesToRead[(startingFileInd+1):]:
-        in_df=pd.read_csv(csv_file,dtype={"U":float,"L":float,"y0":float,"z0":float,"y1":float})
+        in_df=pd.read_csv(csv_file)
 
         in_array=np.array(in_df)
 
@@ -185,7 +183,7 @@ def checkU_distDataFilesForOneT(U_dist_csv_dir):
             msg="error: same\n"
             fptr.writelines(msg)
             exit(sameErrCode)
-    pThreshHold=0.1
+    pThreshHold=0.01
     #if one lag==-1, then the auto-correlation is too large
     if np.min(dist_lags)>0:
         lagMax=np.max(dist_lags)

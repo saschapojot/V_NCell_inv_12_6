@@ -8,9 +8,11 @@
 #include <boost/filesystem.hpp>
 
 #include <boost/math/quadrature/trapezoidal.hpp>
+#include <cfenv> // for floating-point exceptions
 #include <chrono>
 #include <cstdlib>
 #include <cxxabi.h>
+
 #include <fstream>
 #include <initializer_list>
 #include <iomanip>
@@ -72,8 +74,8 @@ public:
 
                 iss >> N;
 
-                d0VecInit = std::shared_ptr<double[]>(new double[N], std::default_delete<double[]>());
-                d1VecInit = std::shared_ptr<double[]>(new double[N-1], std::default_delete<double[]>());
+                d1VecInit = std::shared_ptr<double[]>(new double[N], std::default_delete<double[]>());
+                d2VecInit = std::shared_ptr<double[]>(new double[N-1], std::default_delete<double[]>());
 
                 paramCounter++;
                 continue;
@@ -107,11 +109,11 @@ public:
 
                 LInit=values[0];
                 for(int i=1;i<=N;i++){
-                    d0VecInit[i-1]=values[i];
+                    d1VecInit[i-1]=values[i];
                 }
 
                 for(int i=N+1;i<=2*N-1;i++){
-                    d1VecInit[i-N-1]=values[i];
+                    d2VecInit[i-N-1]=values[i];
                 }
 
 
@@ -169,13 +171,13 @@ public:
         }//end while
 
         std::cout<<"LInit="<<LInit<<std::endl;
-        std::cout<<"d0VecInit: \n";
-        print_shared_ptr(d0VecInit,N);
         std::cout<<"d1VecInit: \n";
-        print_shared_ptr(d1VecInit,N-1);
+        print_shared_ptr(d1VecInit,N);
+        std::cout<<"d2VecInit: \n";
+        print_shared_ptr(d2VecInit,N-1);
         this->potFuncPtr = createPotentialFunction(potFuncName, coefsToPotFunc);
         potFuncPtr->init();
-        this->varNum = 2*N+1;//U,L,d0Vec,d1Vec
+        this->varNum = 2*N+1;//U,L,d1Vec,d2Vec
         try {
             this->U_dist_ptr= std::shared_ptr<double[]>(new double[loopToWrite * varNum],
                                                         std::default_delete<double[]>());
@@ -207,30 +209,30 @@ public:
 
     ///
     /// @param LCurr
-    /// @param d0VecCurr
     /// @param d1VecCurr
+    /// @param d2VecCurr
     /// @param LNext
-    /// @param d0VecNext
     /// @param d1VecNext
+    /// @param d2VecNext
     /// @return
-    void proposal(const double &LCurr, const std::shared_ptr<double[]>& d0VecCurr ,const std::shared_ptr<double[]>&d1VecCurr,
-                  double & LNext, std::shared_ptr<double[]>& d0VecNext, std::shared_ptr<double[]>& d1VecNext);
+    void proposal(const double &LCurr, const std::shared_ptr<double[]>& d1VecCurr ,const std::shared_ptr<double[]>&d2VecCurr,
+                  double & LNext, std::shared_ptr<double[]>& d1VecNext, std::shared_ptr<double[]>& d2VecNext);
 
 
     ///
     /// @param LCurr
-    /// @param d0VecCurr
     /// @param d1VecCurr
+    /// @param d2VecCurr
     /// @param UCurr
     /// @param LNext
-    /// @param d0VecNext
     /// @param d1VecNext
+    /// @param d2VecNext
     /// @param UNext
     /// @return
-    double acceptanceRatio(const double &LCurr,const std::shared_ptr<double[]>& d0VecCurr ,const std::shared_ptr<double[]>&d1VecCurr
+    double acceptanceRatio(const double &LCurr,const std::shared_ptr<double[]>& d1VecCurr ,const std::shared_ptr<double[]>&d2VecCurr
                            ,const double& UCurr,
-                           const double &LNext, const std::shared_ptr<double[]>& d0VecNext,
-                           const std::shared_ptr<double[]>&  d1VecNext,
+                           const double &LNext, const std::shared_ptr<double[]>& d1VecNext,
+                           const std::shared_ptr<double[]>&  d2VecNext,
                            double &UNext);
 
     ///
@@ -271,13 +273,57 @@ public:
     /// @return
     double integrand(const double &y, const double& x,const double &a, const double &b);
 
-    void execute_mc(const double& L,const std::shared_ptr<double[]>& d0Vec, const std::shared_ptr<double[]>& d1Vec, const size_t & loopInit, const size_t & flushNum);
+    void execute_mc(const double& L,const std::shared_ptr<double[]>& d1Vec, const std::shared_ptr<double[]>& d2Vec, const size_t & loopInit, const size_t & flushNum);
 
 
      void saveArrayToCSV(const std::shared_ptr<double[]>& array, const  int& arraySize, const std::string& filename, const int& numbersPerRow) ;
 
     void init_and_run();
 
+
+    ///
+    /// @param x proposed value
+    /// @param y current value
+    /// @param a left end of interval
+    /// @param b right end of interval
+    /// @param epsilon half length
+    /// @return proposal probability S(x|y)
+    double S_uni(const double &x, const double &y,const double &a, const double &b, const double &epsilon);
+
+
+    ///
+    /// @param LCurr
+    /// @param d1VecCurr
+    /// @param d2VecCurr
+    /// @param LNext
+    /// @param d1VecNext
+    /// @param d2VecNext
+    void proposal_unit(const double &LCurr, const std::shared_ptr<double[]>& d1VecCurr ,const std::shared_ptr<double[]>&d2VecCurr,
+                       double & LNext, std::shared_ptr<double[]>& d1VecNext, std::shared_ptr<double[]>& d2VecNext);
+
+    ///
+    /// @param LCurr
+    /// @param d1VecCurr
+    /// @param d2VecCurr
+    /// @param UCurr
+    /// @param LNext
+    /// @param d1VecNext
+    /// @param d2VecNext
+    /// @param UNext
+    /// @return
+    double acceptanceRatio_uni(const double &LCurr,const std::shared_ptr<double[]>& d1VecCurr ,const std::shared_ptr<double[]>&d2VecCurr
+            ,const double& UCurr,
+                               const double &LNext, const std::shared_ptr<double[]>& d1VecNext,
+                               const std::shared_ptr<double[]>&  d2VecNext,
+                               double &UNext);
+
+    ///
+    /// @param x
+    /// @param leftEnd
+    /// @param rightEnd
+    /// @param eps
+    /// @return return a value within distance eps from x, on the open interval (leftEnd, rightEnd)
+    double generate_uni_open_interval(const double &x, const double &leftEnd, const double &rightEnd, const double &eps);
 
     template<class T>
             void print_shared_ptr(const std::shared_ptr<T> &ptr,const int& size){
@@ -310,8 +356,8 @@ public:
     std::shared_ptr<double[]> U_dist_ptr;
     int varNum;
     double LInit;
-    std::shared_ptr<double[]> d0VecInit;
     std::shared_ptr<double[]> d1VecInit;
+    std::shared_ptr<double[]> d2VecInit;
 
 //    double y0Init;
 //    double z0Init;

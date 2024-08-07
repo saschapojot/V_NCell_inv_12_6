@@ -29,15 +29,15 @@ if N<=0:
     print("N="+str(N)+"<=0")
     exit(valErr)
 #search and read U_dist files
-#give arbitrary values to L, d0Vec, d1Vec without reading data
+#give arbitrary values to L, d1Vec, d2Vec without reading data
 UInit=6
 
 # y0Init=1
 # z0Init=1
 # y1Init=1
-d0Vec=np.ones(N,dtype=float)
-d1Vec=np.ones(N-1,dtype=float)
-LInit=np.sum(d0Vec)+np.sum(d1Vec)+1
+d1Vec=np.ones(N,dtype=float)
+d2Vec=np.ones(N-1,dtype=float)
+LInit=np.sum(d1Vec)+np.sum(d2Vec)+1
 
 loopLastFile=-1
 
@@ -51,28 +51,28 @@ for file in glob.glob(U_dist_dataDir+"/*.csv"):
         loopEndAll.append(int(matchEnd.group(1)))
 
 
-def create_loadedJsonData(UVal,LVal,d0Vec,d1Vec,loopLastFileVal):
+def create_loadedJsonData(UVal,LVal,d1Vec,d2Vec,loopLastFileVal):
     """
 
     :param UVal:
     :param LVal:
-    :param d0Vec:
     :param d1Vec:
+    :param d2Vec:
     :param loopLastFileVal:
     :return: loadedJsonData as string
     """
     initDataDict={
         "U":str(UVal),
         "L":str(LVal),
-        "d0Vec":list(d0Vec),
         "d1Vec":list(d1Vec),
+        "d2Vec":list(d2Vec),
         "loopLastFile":str(loopLastFileVal)
     }
     return json.dumps(initDataDict)
 
 #if no data found, return the arbitrary values
 if len(csvFileList)==0:
-    loadedJsonDataStr=create_loadedJsonData(UInit,LInit,d0Vec,d1Vec,loopLastFile)
+    loadedJsonDataStr=create_loadedJsonData(UInit,LInit,d1Vec,d2Vec,loopLastFile)
     loadedJsonData_stdout="loadedJsonData="+loadedJsonDataStr
     print(loadedJsonData_stdout)
     exit(0)
@@ -100,10 +100,10 @@ LInit=valsInLastRow[1]
 # y0Init=valsInLastRow[2]
 # z0Init=valsInLastRow[3]
 # y1Init=valsInLastRow[4]
-d0Vec=valsInLastRow[2:2+N]
-d1Vec=valsInLastRow[2+N:2*N+1]
+d1Vec=valsInLastRow[2:2+N]
+d2Vec=valsInLastRow[2+N:2*N+1]
 
-loadedJsonDataStr=create_loadedJsonData(UInit,LInit,d0Vec,d1Vec,loopLastFile)
+loadedJsonDataStr=create_loadedJsonData(UInit,LInit,d1Vec,d2Vec,loopLastFile)
 loadedJsonData_stdout="loadedJsonData="+loadedJsonDataStr
 print(loadedJsonData_stdout)
 exit(0)

@@ -54,7 +54,7 @@ if match_summaryJson:
 ##################################################
 
 ###############################################
-#load previous data, to get L, d0Vec, d1Vec,
+#load previous data, to get L, d1Vec, d2Vec,
 #get loadedJsonData
 loadResult=subprocess.run(["python3","./init_run_scripts/load_previous_data.py", json.dumps(jsonDataFromConf), json.dumps(jsonFromSummary)],capture_output=True, text=True)
 # print(loadResult.stdout)
@@ -80,16 +80,16 @@ unitCellNum=jsonDataFromConf["unitCellNum"]
 loopToWrite=jsonDataFromConf["loop_to_write"]
 UStr=loadedJsonData["U"]
 LStr=loadedJsonData["L"]
-d0Vec=loadedJsonData["d0Vec"]
 d1Vec=loadedJsonData["d1Vec"]
+d2Vec=loadedJsonData["d2Vec"]
 # y0Str=loadedJsonData["y0"]
 # z0Str=loadedJsonData["z0"]
 # y1Str=loadedJsonData["y1"]
-d0VecStr=",".join(map(str,d0Vec))
 d1VecStr=",".join(map(str,d1Vec))
+d2VecStr=",".join(map(str,d2Vec))
 loopLastFile=loadedJsonData["loopLastFile"]
 
-initValsStr=f"{LStr},"+f"{d0VecStr},"+f"{d1VecStr}"
+initValsStr=f"{LStr},"+f"{d1VecStr},"+f"{d2VecStr}"
 
 coefsStr=jsonDataFromConf["coefs"]+","+str(unitCellNum)
 newFlushNum=jsonFromSummary["newFlushNum"]

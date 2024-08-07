@@ -45,79 +45,6 @@ public:
         }
     }
 
-    // Vectorized multiplication summation function
-    double vectorized_multiply_sum(const double* array, double multiplier, int n) {
-        __m256d vec_multiplier = _mm256_set1_pd(multiplier); // Set all elements of the vector to the multiplier
-        __m256d vec_sum = _mm256_setzero_pd(); // Initialize a 256-bit vector with zeros
-        int i;
-
-        // Process the array in chunks of 4 elements
-        for (i = 0; i <= n - 4; i += 4) {
-            __m256d vec_array = _mm256_loadu_pd(&array[i]); // Load 4 elements from the array
-            __m256d vec_result = _mm256_mul_pd(vec_array, vec_multiplier); // Multiply each element by the multiplier
-            vec_sum = _mm256_add_pd(vec_sum, vec_result); // Accumulate the sum
-        }
-
-        // Handle remaining elements
-        double sum = 0.0;
-        for (; i < n; ++i) {
-            sum += array[i] * multiplier;
-        }
-
-        // Horizontal addition of the elements in vec_sum
-        alignas(32) double temp[4];
-        _mm256_storeu_pd(temp, vec_sum);
-        for (int j = 0; j < 4; ++j) {
-            sum += temp[j];
-        }
-
-        return sum;
-    }
-
-    // Custom approximate vectorized log function using AVX2
-    __m256d custom_mm256_log_pd(__m256d x) {
-        alignas(32) double temp[4];
-        _mm256_storeu_pd(temp, x);
-        for (int i = 0; i < 4; ++i) {
-            temp[i] = std::log(temp[i]);
-        }
-        return _mm256_loadu_pd(temp);
-    }
-
-    // Custom approximate vectorized exp function using AVX2
-    __m256d custom_mm256_exp_pd(__m256d x) {
-        alignas(32) double temp[4];
-        _mm256_storeu_pd(temp, x);
-        for (int i = 0; i < 4; ++i) {
-            temp[i] = std::exp(temp[i]);
-        }
-        return _mm256_loadu_pd(temp);
-    }
-
-    // Custom vectorized power function using AVX2
-    __m256d custom_mm256_pow_pd(__m256d base, __m256d exp) {
-        __m256d log_base = custom_mm256_log_pd(base); // Compute log(base)
-        __m256d log_base_times_exp = _mm256_mul_pd(log_base, exp); // Compute log(base) * exp
-        return custom_mm256_exp_pd(log_base_times_exp); // Compute exp(log(base) * exp)
-    }
-
-// Vectorized power function using a single double value as exponent
-    void vectorized_pow(const double* base, double exp, double* result, int n) {
-        __m256d vec_exp = _mm256_set1_pd(exp); // Set all elements of the vector to the exponent value
-        int i;
-
-        // Process the array in chunks of 4 elements
-        for (i = 0; i <= n - 4; i += 4) {
-            __m256d base_vals = _mm256_loadu_pd(&base[i]);
-            __m256d result_vals = custom_mm256_pow_pd(base_vals, vec_exp);
-            _mm256_storeu_pd(&result[i], result_vals);
-        }
-
-        // Process remaining elements
-        for (; i < n; ++i) {
-            result[i] = std::pow(base[i], exp);
-        }
-    }
 
     void init() override{
         this->json2Coefs(coefsInStr);
@@ -136,62 +63,62 @@ public:
     }
 
     ///
-    /// @param d0Vec array of distance d0, size=N
     /// @param d1Vec array of distance d1, size=N
+    /// @param d2Vec array of distance d2, size=N
     /// @param L total length
     /// @param N unit cell number
     /// @return
-    double operator()(const double&L,const double *d0Vec,const double *d1Vec) override {
+    double operator()(const double&L,const double *d1Vec,const double *d2Vec) override {
 //////////////////////////vectorization
-//    //the last element of d1Vec is compute from d0Vec, d1Vec's first N-1 elements, and L
-//    double d0SumNeg=vectorized_multiply_sum(d0Vec,-1,N);
-////    std::cout<<"d0SumNeg="<<d0SumNeg<<std::endl;
-//    double d1SumNeg= vectorized_multiply_sum(d1Vec,-1,N-1);
+//    //the last element of d2Vec is compute from d1Vec, d2Vec's first N-1 elements, and L
+//    double d1SumNeg=vectorized_multiply_sum(d1Vec,-1,N);
 ////    std::cout<<"d1SumNeg="<<d1SumNeg<<std::endl;
-//    d1Vec[N-1]=d0SumNeg+d1SumNeg+L;
-////    std::cout<<"d1Vec[N-1]="<<d1Vec[N-1]<<std::endl;
+//    double d2SumNeg= vectorized_multiply_sum(d2Vec,-1,N-1);
+////    std::cout<<"d2SumNeg="<<d2SumNeg<<std::endl;
+//    d2Vec[N-1]=d1SumNeg+d2SumNeg+L;
+////    std::cout<<"d2Vec[N-1]="<<d2Vec[N-1]<<std::endl;
 //
 //
 //    double val=0;
-//    //d0Vec, -12-th power
-//        vectorized_pow(d0Vec,-12.0,pow_result_tmp.get(),N);
+//    //d1Vec, -12-th power
+//        vectorized_pow(d1Vec,-12.0,pow_result_tmp.get(),N);
 //        val+= vectorized_multiply_sum(pow_result_tmp.get(),a1,N);
-//        //d0Vec, -6-th power
-//        vectorized_pow(d0Vec,-6.0,pow_result_tmp.get(),N);
+//        //d1Vec, -6-th power
+//        vectorized_pow(d1Vec,-6.0,pow_result_tmp.get(),N);
 //        val+=vectorized_multiply_sum(pow_result_tmp.get(),-b1,N);
 //
-//        //d1Vec, -12-th power
-//        vectorized_pow(d1Vec,-12.0,pow_result_tmp.get(),N);
+//        //d2Vec, -12-th power
+//        vectorized_pow(d2Vec,-12.0,pow_result_tmp.get(),N);
 //        val+= vectorized_multiply_sum(pow_result_tmp.get(),a2,N);
 //
-//        //d1Vec, -6th power
-//        vectorized_pow(d1Vec,-6.0,pow_result_tmp.get(),N);
+//        //d2Vec, -6th power
+//        vectorized_pow(d2Vec,-6.0,pow_result_tmp.get(),N);
 //        val+=vectorized_multiply_sum(pow_result_tmp.get(),-b2,N);
 //////////////////////////end of vectorization
         double sum=0;
         for(int i=0;i<N;i++){
-            sum+=-d0Vec[i];
+            sum+=-d1Vec[i];
         }
         for(int i=0;i<N-1;i++){
-            sum+=-d1Vec[i];
+            sum+=-d2Vec[i];
         }
         sum+=L;
 
 
         double val=0;
         for(int i=0;i<N;i++){
-            val+=a1*std::pow(d0Vec[i],-12);
+            val+=a1*std::pow(d1Vec[i],-12);
         }
         for(int i=0;i<N;i++){
 
-            val+=-b1*std::pow(d0Vec[i],-6);
+            val+=-b1*std::pow(d1Vec[i],-6);
         }
 
         for(int i=0;i<N-1;i++){
-            val+=a2*std::pow(d1Vec[i],-12);
+            val+=a2*std::pow(d2Vec[i],-12);
         }
         for(int i=0;i<N-1;i++){
-            val+=-b2*std::pow(d1Vec[i],-6);
+            val+=-b2*std::pow(d2Vec[i],-6);
         }
         val+=a2*std::pow(sum,-12)-b2*std::pow(sum,-6);
         return val;
@@ -199,31 +126,31 @@ public:
 
     }//end of () operator
 
-    double plain_for(const double&L,const double *d0Vec,const double *d1Vec)override{
+    double plain_for(const double&L,const double *d1Vec,const double *d2Vec)override{
         double sum=0;
         for(int i=0;i<N;i++){
-            sum+=-d0Vec[i];
+            sum+=-d1Vec[i];
         }
         for(int i=0;i<N-1;i++){
-            sum+=-d1Vec[i];
+            sum+=-d2Vec[i];
         }
         sum+=L;
 
 
         double val=0;
         for(int i=0;i<N;i++){
-            val+=a1*std::pow(d0Vec[i],-12);
+            val+=a1*std::pow(d1Vec[i],-12);
         }
         for(int i=0;i<N;i++){
 
-            val+=-b1*std::pow(d0Vec[i],-6);
+            val+=-b1*std::pow(d1Vec[i],-6);
         }
 
         for(int i=0;i<N-1;i++){
-            val+=a2*std::pow(d1Vec[i],-12);
+            val+=a2*std::pow(d2Vec[i],-12);
         }
         for(int i=0;i<N-1;i++){
-            val+=-b2*std::pow(d1Vec[i],-6);
+            val+=-b2*std::pow(d2Vec[i],-6);
         }
         val+=a2*std::pow(sum,-12)-b2*std::pow(sum,-6);
         return val;
